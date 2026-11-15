@@ -2,6 +2,8 @@
 package com.thani.views;
 
 import com.thani.clases.Calculator;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 /**
  *
@@ -10,12 +12,14 @@ import com.thani.clases.Calculator;
 public class MainView extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MainView.class.getName());
+    //Se haran los cálculos con este objeto
     private final Calculator calc = new Calculator();
+    //Es true sí lo que hay en la pantalla es un resultado ya calculado
     private boolean mostrandoResultado = false;
     
     public MainView() {
         initComponents();
-
+        configurar();
     }
 
 
@@ -161,8 +165,142 @@ public class MainView extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_btnDividirActionPerformed
 
-    
+        //Lo que hace es conectar los botones y teclado
+        private void configurar() {
+        //Añade un oyente a cada boton
+        btnC.addActionListener(e -> pulsar("C"));
+        btnMod.addActionListener(e -> pulsar("Mod"));
+        btnPorcentaje.addActionListener(e -> pulsar("%"));
+        btnDividir.addActionListener(e -> pulsar("÷"));
+        jButton6.addActionListener(e -> pulsar("7"));
+        jButton5.addActionListener(e -> pulsar("8"));
+        jButton7.addActionListener(e -> pulsar("9"));
+        btnMultiplicar.addActionListener(e -> pulsar("x"));
+        jButton9.addActionListener(e -> pulsar("4"));
+        jButton16.addActionListener(e -> pulsar("5"));
+        jButton12.addActionListener(e -> pulsar("6"));
+        btnRestar.addActionListener(e -> pulsar("-"));
+        jButton20.addActionListener(e -> pulsar("3"));
+        jButton13.addActionListener(e -> pulsar("2"));
+        jButton15.addActionListener(e -> pulsar("1"));
+        btnSumar.addActionListener(e -> pulsar("+"));
+        btn0.addActionListener(e -> pulsar("0"));
+        btnComa.addActionListener(e -> pulsar(","));
+        btnAns.addActionListener(e -> pulsar("Ans"));
+        btnIgual.addActionListener(e -> pulsar("="));
 
+        txtPantalla.setFocusable(false);
+        
+        txtPantalla.setText("");
+        setFocusable(true);
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                char c = e.getKeyChar();
+                if (Character.isDigit(c)) {
+                    pulsar("" + c);
+                } else if (c == ',' || c == '.') {
+                    pulsar(",");
+                } else if (c == '*' || c == 'x' || c == 'X') {
+                    pulsar("x");
+                } else if (c == '/') {
+                    pulsar("÷");
+                } else if (c == '+' || c == '-' || c == '%') {
+                    pulsar("" + c);
+                } else if (c == '\n') {
+                    pulsar("=");
+                } else if (c == '\b') {
+                    retroceder();
+                }
+            }
+        });
+    }
+    
+    //Lo llaman los botones y teclados
+    private void pulsar(String t){ 
+        if (t.equals("=")) {
+            igual();
+            requestFocus();
+            return;
+        }
+        
+        String p = txtPantalla.getText();
+        if (p.equals("Error")) {
+            p = "";
+        }
+        
+        boolean operador = t.equals("Mod") || t.equals("÷") || t.equals("x") || t.equals("-") || t.equals("+");
+        if (mostrandoResultado && !operador && !t.equals("%")) {
+            p = "";
+        }
+        mostrandoResultado = false;
+        
+        boolean trasOperador = p.endsWith(" ") && !p.endsWith("% ");
+        String ultimo = p.substring(p.lastIndexOf(' ') + 1);//Ultimo trozo de texto, po rsi tiene coma o Ans
+                switch (t) {
+            case "C":
+                p = "";
+                calc.reset();
+                break;
+
+            case "Mod":
+            case "÷":
+            case "x":
+            case "-":
+            case "+":
+                //si no acaba ya en operador
+                if (!p.isEmpty() && !trasOperador) {
+                    p = p.trim() + " " + t + " ";
+                }
+                break;
+
+            case "%":
+                //Solo detrás de un número o de Ans
+                if (!p.isEmpty() && !p.endsWith(" ")) {
+                    p = p + " % ";
+                }
+                break;
+
+            case "Ans":
+                //Solo al principio o tras un operador
+                if (p.isEmpty() || trasOperador) {
+                    p = p + "Ans";
+                }
+                break;
+
+            case ",":
+                if (p.isEmpty() || trasOperador) {
+                    p = p + "0,";   //si le usuario le da , sin ningñun numero, se pone 0, por defecto
+                } else if (!p.endsWith(" ") && !ultimo.contains(",") && !ultimo.equals("Ans")) {
+                    p = p + ",";
+                }
+                break;
+
+            default:
+                //no se pegan detrás de Ans ni de %
+                if (!p.endsWith("Ans") && !p.endsWith("% ")) {
+                    p = p + t;
+                }
+        }
+        txtPantalla.setText(p);
+        requestFocus();
+    }
+    
+    
+    private void retroceder(){
+    String p = txtPantalla.getText();
+    if(mostrandoResultado || p.equals("Error")){
+        p = "";
+        mostrandoResultado = false;
+    }else if (p.endsWith(" ")){//op o %
+        p = p.replaceAll(" \\S+ $", "");
+        } else if (p.endsWith("Ans")) {
+            p = p.replaceAll("Ans$", "");
+        } else {
+            p = p.replaceAll(".$", "");
+        }
+        txtPantalla.setText(p);
+    }
     
     private String formatear(double d){  
         //comprueba si es entero, elimina los decimales  y lo convierte e nentero
@@ -173,7 +311,7 @@ public class MainView extends javax.swing.JFrame {
         return String.valueOf(d).replace('.', ',');
     }
     
-    //Cuando se aprete el =, esta función salta y recoge el texto de la pantalla y hace excepciones
+    //Cuando se pulse el =, esta función salta y recoge el texto de la pantalla y hace las excepciones
     private void igual(){
         String pantalla = txtPantalla.getText();
         if(pantalla.isEmpty()){
@@ -185,13 +323,11 @@ public class MainView extends javax.swing.JFrame {
                 txtPantalla.setText("Error");
             } else {
                 txtPantalla.setText(formatear(r));
-            }
-        
+            } 
         }catch(Exception e){
             txtPantalla.setText("Error");
         }
         mostrandoResultado = true;
-        
     }
     
     
